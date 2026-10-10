@@ -3,7 +3,7 @@
  *
  *  Run this test sequence after each modification on the JBIG library.
  *
- *  Markus Kuhn -- http://www.cl.cam.ac.uk/~mgk25/
+ *  Markus Kuhn -- https://www.cl.cam.ac.uk/~mgk25/
  */
 
 #include <stdio.h>
@@ -80,6 +80,8 @@ static int line_out(const struct jbg85_dec_state *s,
   assert(jbg85_dec_validwidth(s));
   assert(len == (jbg85_dec_getwidth(s) >> 3) + !!(jbg85_dec_getwidth(s) & 7));
   assert(y < jbg85_dec_getheight(s));
+  assert(!jbg85_dec_finished(s));
+  assert(jbg85_dec_finalheight(s) == !(s->options & JBG_VLENGTH));
   memcpy((unsigned char *) bitmap + len * y, start, len);
   return 0;
 }
@@ -193,6 +195,8 @@ static int test_cycle(unsigned char *orig_image, int width, int height,
 	   (long) cnt, sjd.y);
     trouble++;
   } else {
+    assert(jbg85_dec_finished(&sjd));
+    assert(jbg85_dec_finalheight(&sjd));
     printf("Image comparison: ");
     result = 1;
     if (memcmp(orig_image, image, plane_size)) {
@@ -224,6 +228,8 @@ static int test_cycle(unsigned char *orig_image, int width, int height,
 	     FAILED "\nCause: '%s'\n", result, jbg85_strerror(result));
       trouble++;
     } else {
+      assert(jbg85_dec_finished(&sjd));
+      assert(jbg85_dec_finalheight(&sjd));
       printf("Image comparison: ");
       result = 1;
       if (memcmp(orig_image, image, plane_size)) {
@@ -442,7 +448,7 @@ int main(int argc, char **argv)
     puts("This is bad. If you cannot identify the problem yourself, please "
 	 "send\nthis output plus a detailed description of your "
 	 "compile environment\n(OS, compiler, version, options, etc.) to "
-	 "Markus Kuhn\n<http://www.cl.cam.ac.uk/~mgk25/>.");
+	 "Markus Kuhn\n<https://www.cl.cam.ac.uk/~mgk25/>.");
   else
     puts("Congratulations, everything is fine.\n");
 

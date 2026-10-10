@@ -1,7 +1,7 @@
 /*
  *  pbmtojbg - Portable Bitmap to JBIG converter
  *
- *  Markus Kuhn - http://www.cl.cam.ac.uk/~mgk25/jbigkit/
+ *  Markus Kuhn -- https://www.cl.cam.ac.uk/~mgk25/jbigkit/
  */
 
 #include <stdio.h>
@@ -32,7 +32,7 @@ static void usage(void)
      "  -y number\tmaximum height of lowest resolution layer (default 480)\n"
      "  -l number\tlowest layer written to output file (default 0)\n"
      "  -h number\thighest layer written to output file (default max)\n"
-     "  -b\t\tuse binary code for multiple bitplanes (default: Gray code)\n"
+     "  -b\t\tuse binary code for multiple bit planes (default: Gray code)\n"
      "  -d number\ttotal number of differential layers (overrides -x and -y)\n"
      "  -s number\theight of a stripe in layer 0\n");
   fprintf(stderr,
@@ -51,7 +51,7 @@ static void usage(void)
   fprintf(stderr,
      "  -Y number\tannounce in header initially this larger image height\n"
      "\t\t(only for generating test files with NEWLEN and VLENGTH=1)\n"
-     "  -f\t\tchose encoding options for T.85 fax profile complianance\n"
+     "  -f\t\tchoose encoding options for T.85 fax profile compliance\n"
      "  -v\t\tverbose output\n\n");
   exit(1);
 }
@@ -74,32 +74,46 @@ void *checkedmalloc(size_t n)
 
 
 /*
- * Read an ASCII integer number from file f and skip any PBM
- * comments which are encountered.
+ * Report a problem with the input file and abort
  */
-static unsigned long getint(FILE *f)
+static void input_error(FILE *f, const char *fn)
+{
+  if (ferror(f)) {
+    fprintf(stderr, "Problem while reading input file '%s", fn);
+    perror("'");
+  } else
+    fprintf(stderr, "Unexpected end of input file '%s'!\n", fn);
+  exit(1);
+}
+
+
+/*
+ * Read an ASCII integer number from file f into *value and skip any
+ * PBM comments which are encountered. Returns 0 if a number was read
+ * and EOF if the end of the file (or a read error) came first.
+ */
+static int getint(FILE *f, unsigned long *value)
 {
   int c;
-  unsigned long i;
 
   while ((c = getc(f)) != EOF)
     if (c == '#')
       while ((c = getc(f)) != EOF && !(c == 13 || c == 10)) ;
     else if (!isspace(c))
       break;
-  if (c == EOF) return 0;
+  if (c == EOF) return EOF;
   ungetc(c, f);
-  if (fscanf(f, "%lu", &i) != 1) {
+  if (fscanf(f, "%lu", value) != 1) {
     fprintf(stderr, "Unsigned integer value expected!\n");
     exit(1);
   }
 
-  return i;
+  return 0;
 }
 
 
 /*
- * Callback procedure which is used by JBIG encoder to deliver the
+ * Call-back procedure which is used by the JBIG encoder to deliver the
  * encoded data. It simply sends the bytes to the output file.
  */
 static void data_out(unsigned char *start, size_t len, void *file)
@@ -115,7 +129,7 @@ int main (int argc, char **argv)
   FILE *fin = stdin, *fout = stdout;
   const char *fnin = NULL, *fnout = NULL;
   int i, j, c;
-  int all_args = 0, files = 0;
+  int all_args = 0, files = 0, ferr = 0;
   unsigned long x, y;
   unsigned long width, height, max, v;
   unsigned long bpl;
@@ -123,6 +137,7 @@ int main (int argc, char **argv)
   size_t bitmap_size;
   char type;
   unsigned char **bitmap, *p, *image;
+  unsigned char b = 0;   /* assembles 8 pixels of PBM text format */
   struct jbg_enc_state s;
   int verbose = 0, delay_at = 0, reset = 0, use_graycode = 1;
   long mwidth = 640, mheight = 480;
@@ -143,9 +158,6 @@ int main (int argc, char **argv)
 	  switch(argv[i][j]) {
 	  case '-' :
 	    all_args = 1;
-	    break;
-	  case 0 :
-	    if (files++) usage();
 	    break;
 	  case 'v':
 	    verbose = 1;
@@ -251,15 +263,6 @@ int main (int argc, char **argv)
     }
   } else
     fnin  = "<stdin>";
-  if (fnout) {
-    fout = fopen(fnout, "wb");
-    if (!fout) {
-      fprintf(stderr, "Can't open input file '%s", fnout);
-      perror("'");
-      exit(1);
-    }
-  } else
-    fnout = "<stdout>";
 
   /* read PBM header */
   while ((c = getc(fin)) != EOF && (isspace(c) || c == '#'))
@@ -270,17 +273,18 @@ int main (int argc, char **argv)
     exit(1);
   }
   type = getc(fin);
-  width = getint(fin);
-  height = getint(fin);
+  if (getint(fin, &width) || getint(fin, &height))
+    input_error(fin, fnin);
   if (width < 1 || height < 1 ||
       width > 0xffffffff || height > 0xffffffff) {
     fprintf(stderr, "Invalid width or height!\n");
     exit(1);
   }
   if (type == '2' || type == '5' ||
-      type == '3' || type == '6')
-    max = getint(fin);
-  else
+      type == '3' || type == '6') {
+    if (getint(fin, &max))
+      input_error(fin, fnin);
+  } else
     max = 1;
   if (max < 1) {
     fprintf(stderr, "Invalid maxval!\n");
@@ -307,18 +311,20 @@ int main (int argc, char **argv)
   case '1':
     /* PBM text format */
     p = bitmap[0];
-    for (y = 0; y < height; y++)
+    for (y = 0; y < height && !ferr; y++)
       for (x = 0; x <= ((width-1) | 7); x++) {
-	*p <<= 1;
-	if (x < width)
-	  *p |= getint(fin) & 1;
+	if (x < width) {
+	  if (getint(fin, &v)) { ferr = 1; break; }
+	  b = (b << 1) | (v & 1);
+	} else
+	  b <<= 1;                    /* zero padding at the end of the line */
 	if ((x & 7) == 7)
-	  ++p;
+	  *p++ = b;
       }
     break;
   case '4':
     /* PBM raw binary format */
-    fread(bitmap[0], bitmap_size, 1, fin);
+    ferr = fread(bitmap[0], bitmap_size, 1, fin) != 1;
     break;
   case '2':
   case '5':
@@ -330,12 +336,14 @@ int main (int argc, char **argv)
     image = (unsigned char *) checkedmalloc(width * height * bpp);
     if (type == '2') {
       for (x = 0; x < width * height; x++) {
-	v = getint(fin);
+	if (getint(fin, &v)) { ferr = 1; break; }
 	for (j = 0; j < bpp; j++)
 	  image[x * bpp + (bpp - 1) - j] = v >> (j * 8);
       }
     } else
-      fread(image, width * height, bpp, fin);
+      ferr = fread(image, width * height, bpp, fin) != (size_t) bpp;
+    if (ferr)
+      input_error(fin, fnin);   /* image[] is only partially filled */
     jbg_split_planes(width, height, planes, encode_planes, image, bitmap,
 		     use_graycode);
     free(image);
@@ -344,25 +352,8 @@ int main (int argc, char **argv)
     fprintf(stderr, "Unsupported PBM type P%c!\n", type);
     exit(1);
   }
-  if (ferror(fin)) {
-    fprintf(stderr, "Problem while reading input file '%s", fnin);
-    perror("'");
-    exit(1);
-  }
-  if (feof(fin)) {
-    fprintf(stderr, "Unexpected end of input file '%s'!\n", fnin);
-    exit(1);
-  }
-
-  /* Test for valid parameters */
-  if (width < 1 || height < 1) {
-    fprintf(stderr, "Image dimensions must be positive!\n");
-    exit(1);
-  }
-  if (encode_planes < 1 || encode_planes > 255) {
-    fprintf(stderr, "Number of planes must be in range 1-255!\n");
-    exit(1);
-  }
+  if (ferr)
+    input_error(fin, fnin);
 
   /* Test the final byte in each image line for correct zero padding */
   if ((width & 7) && type == '4') {
@@ -374,9 +365,20 @@ int main (int argc, char **argv)
       }
   }
 
+  /* open output file only after the input file has been read completely */
+  if (fnout) {
+    fout = fopen(fnout, "wb");
+    if (!fout) {
+      fprintf(stderr, "Can't open output file '%s", fnout);
+      perror("'");
+      exit(1);
+    }
+  } else
+    fnout = "<stdout>";
+
   /* Apply JBIG algorithm and write BIE to output file */
 
-  /* initialize parameter struct for JBIG encoder*/
+  /* initialize parameter struct for JBIG encoder */
   jbg_enc_init(&s, width, height, encode_planes, bitmap, data_out, fout);
 
   /* Select number of resolution layers either directly or based
@@ -402,6 +404,18 @@ int main (int argc, char **argv)
 
   /* now encode everything and send it to data_out() */
   jbg_enc_out(&s);
+
+  /* jbg_enc_out() silently produces nothing if it was handed a
+   * combination of parameters that it cannot encode */
+  if (total_length == 0) {
+    fprintf(stderr, "Nothing encoded: unsuitable combination of layer "
+	    "(-d, -l, -h) and stripe height (-s) options!\n");
+    if (fout != stdout) {
+      fclose(fout);
+      remove(fnout);
+    }
+    exit(1);
+  }
 
   /* give encoder a chance to free its temporary data structures */
   jbg_enc_free(&s);

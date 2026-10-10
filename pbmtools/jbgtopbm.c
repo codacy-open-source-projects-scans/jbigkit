@@ -1,7 +1,7 @@
 /*
  *  jbgtopbm - JBIG to Portable Bitmap converter
  *
- *  Markus Kuhn - http://www.cl.cam.ac.uk/~mgk25/jbigkit/
+ *  Markus Kuhn -- https://www.cl.cam.ac.uk/~mgk25/jbigkit/
  */
 
 #include <stdio.h>
@@ -23,9 +23,9 @@ static void usage(void)
      "usage: %s [<options>] [<input-file> | -  [<output-file>]]\n\n"
      "options:\n\n", progname);
   fprintf(stderr,
-     "  -x number\tif possible decode only up to a resolution layer not\n"
+     "  -x number\tif possible, decode only up to a resolution layer not\n"
      "\t\twider than the given number of pixels\n"
-     "  -y number\tif possible decode only up to a resolution layer not\n"
+     "  -y number\tif possible, decode only up to a resolution layer not\n"
      "\t\thigher than the given number of pixels\n"
      "  -m\t\tdecode a progressive sequence of multiple concatenated BIEs\n"
      "  -b\t\tuse binary code for multiple bit planes (default: Gray code)\n"
@@ -44,7 +44,7 @@ void write_it(unsigned char *data, size_t len, void *file)
 }
 
 /*
- * Remalloc a buffer and append a file f into its content.
+ * Reallocate a buffer and append the contents of file f to it.
  * If *buflen == 0, then malloc a buffer first.
  */
 void read_file(unsigned char **buf, size_t *buflen, size_t *len, FILE *f)
@@ -297,7 +297,7 @@ int main (int argc, char **argv)
   buflen = 8000;
   buffer = (unsigned char *) malloc(buflen);
   if (!buffer) {
-    printf("Sorry, not enough memory available!\n");
+    fprintf(stderr, "Sorry, not enough memory available!\n");
     exit(1);
   }
 
@@ -362,15 +362,6 @@ int main (int argc, char **argv)
     diagnose_bie(fin);
     exit(0);
   }
-  if (fnout) {
-    fout = fopen(fnout, "wb");
-    if (!fout) {
-      fprintf(stderr, "Can't open input file '%s", fnout);
-      perror("'");
-      exit(1);
-    }
-  } else
-    fnout = "<stdout>";
 
   /* send input file to decoder */
   jbg_dec_init(&s);
@@ -380,10 +371,6 @@ int main (int argc, char **argv)
   if (len < 20) {
     fprintf(stderr, "Input file '%s' (%lu bytes) must be at least "
 	    "20 bytes long\n", fnin, (unsigned long) len);
-    if (fout != stdout) {
-      fclose(fout);
-      remove(fnout);
-    }
     exit(1);
   }
   if (buffer[19] & JBG_VLENGTH) {
@@ -424,10 +411,6 @@ int main (int argc, char **argv)
     if (ferror(fin)) {
       fprintf(stderr, "Problem while reading input file '%s", fnin);
       perror("'");
-      if (fout != stdout) {
-	fclose(fout);
-	remove(fnout);
-      }
       exit(1);
     }
   }
@@ -436,20 +419,23 @@ int main (int argc, char **argv)
             "(error code 0x%02x, %lu = 0x%04lx BIE bytes processed)\n",
  	    fnin, jbg_strerror(result), result,
 	    (unsigned long) bytes_read, (unsigned long) bytes_read);
-    if (fout != stdout) {
-      fclose(fout);
-      remove(fnout);
-    }
     exit(1);
   }
   if (plane >= 0 && jbg_dec_getplanes(&s) <= plane) {
     fprintf(stderr, "Image has only %d planes!\n", jbg_dec_getplanes(&s));
-    if (fout != stdout) {
-      fclose(fout);
-      remove(fnout);
-    }
     exit(1);
   }
+
+  /* open output file only after the input has been decoded completely */
+  if (fnout) {
+    fout = fopen(fnout, "wb");
+    if (!fout) {
+      fprintf(stderr, "Can't open output file '%s", fnout);
+      perror("'");
+      exit(1);
+    }
+  } else
+    fnout = "<stdout>";
 
   if (jbg_dec_getplanes(&s) == 1 || plane >= 0) {
     /* write PBM output file */

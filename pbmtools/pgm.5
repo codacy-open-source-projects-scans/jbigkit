@@ -66,20 +66,11 @@ of whitespace (typically a newline) is allowed after the maxval.
 .IP - 2
 The files are smaller and many times faster to read and write.
 .PP
-Note that this raw format can only be used for maxvals less than
-or equal to 255.
-If you use the
-.I pgm
-library and try to write a file with a larger maxval,
-it will automatically fall back on the slower but more general plain
-format.
+Note that the raw format stores each gray value in one byte if the
+maxval is less than 256, and in two bytes, most significant byte
+first, otherwise.
 .SH "SEE ALSO"
-fitstopgm(1), fstopgm(1), hipstopgm(1), lispmtopgm(1), psidtopgm(1),
-rawtopgm(1),
-pgmbentley(1), pgmcrater(1), pgmedge(1), pgmenhance(1), pgmhist(1), pgmnorm(1),
-pgmoil(1), pgmramp(1), pgmtexture(1),
-pgmtofits(1), pgmtofs(1), pgmtolispm(1), pgmtopbm(1),
-pnm(5), pbm(5), ppm(5)
+pbm(5), pbmtojbg(1), jbgtopbm(1)
 .SH AUTHOR
 Copyright (C) 1989, 1991 by Jef Poskanzer.
 .\" Permission to use, copy, modify, and distribute this software and its

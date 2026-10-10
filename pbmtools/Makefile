@@ -6,7 +6,7 @@
 CC = gcc
 
 # Options for the compiler
-CFLAGS = -g -O -W -Wall -Wno-unused-result -ansi -pedantic # --coverage
+CFLAGS = -g -O -W -Wall -ansi -pedantic # --coverage
 CPPFLAGS = -I../libjbig
 LDFLAGS = -L../libjbig
 

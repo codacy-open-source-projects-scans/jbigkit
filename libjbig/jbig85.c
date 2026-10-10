@@ -1,7 +1,7 @@
 /*
  *  T.85 "light" version of the portable JBIG image compression library
  *
- *  Copyright 1995-2014 -- Markus Kuhn -- http://www.cl.cam.ac.uk/~mgk25/
+ *  Copyright 1995-2026 -- Markus Kuhn -- https://www.cl.cam.ac.uk/~mgk25/
  *
  *  This module implements a portable standard C encoder and decoder
  *  using the JBIG1 lossless bi-level image compression algorithm
@@ -56,7 +56,7 @@
 /* object code version id */
 
 const char jbg85_version[] =
-  "JBIG-KIT " JBG85_VERSION " (T.85 version) -- (c) 1995-2014 Markus Kuhn -- "
+  "JBIG-KIT " JBG85_VERSION " (T.85 version) -- (c) 1995-2026 Markus Kuhn -- "
   "Licence: " JBG85_LICENCE "\n";
 
 #define _(String) String  /* to mark translatable string for GNU gettext */
@@ -78,7 +78,7 @@ static const char *errmsg[] = {
 
 
 /*
- * Callback adapter function for arithmetic encoder
+ * Call-back adapter function for arithmetic encoder
  */
 static void enc_byte_out(int byte, void *s)
 {
@@ -129,9 +129,9 @@ void jbg85_enc_init(struct jbg85_enc_state *s,
 
 
 /*
- * The following function allows to specify the bits describing the
+ * The following function lets you specify the bits describing the
  * options of the format as well as the maximum AT movement window and
- * the number of layer 0 lines per stripes.
+ * the number of layer 0 lines per stripe.
  */
 void jbg85_enc_options(struct jbg85_enc_state *s, int options,
 		       unsigned long l0, int mx)
@@ -163,7 +163,7 @@ static void output_newlen(struct jbg85_enc_state *s)
   s->data_out(buf, 6, s->file);
   s->newlen = 2;
   if (s->y == s->y0) {
-    /* if newlen refers to a line in the preceeding stripe, ITU-T T.82
+    /* if NEWLEN refers to a line in the preceding stripe, ITU-T T.82
      * section 6.2.6.2 requires us to append another SDNORM */
     buf[1] = MARKER_SDNORM;
     s->data_out(buf, 2, s->file);
@@ -172,8 +172,8 @@ static void output_newlen(struct jbg85_enc_state *s)
 
 
 /*
- * Encode one full BIE and pass the generated data to the specified
- * call-back function
+ * Encode the next line of the image and pass the generated data to the
+ * specified call-back function
  */
 void jbg85_enc_lineout(struct jbg85_enc_state *s, unsigned char *line,
 		       unsigned char *prevline, unsigned char *prevprevline)
@@ -448,7 +448,7 @@ void jbg85_enc_lineout(struct jbg85_enc_state *s, unsigned char *line,
     output_newlen(s);
   }
 
-  /* check whether it is worth to perform an ATMOVE */
+  /* check whether it is worth performing an ATMOVE */
   if (s->new_tx == -1 && s->c_all > 2048) {
     cmin = clmin = 0xffffffffL;
     cmax = clmax = 0;
@@ -591,7 +591,7 @@ void jbg85_dec_init(struct jbg85_dec_state *s,
  * decoded lines as they are completed. Return the number of bytes
  * which have actually been read. This will be less than len if a
  * marker segment was part of the data or if the final byte was
- * 0xff, meaning that this code can not determine whether we have a
+ * 0xff, meaning that this code cannot determine whether we have a
  * marker segment.
  */
 static size_t decode_pscd(struct jbg85_dec_state *s, unsigned char *data,
@@ -877,7 +877,7 @@ int jbg85_dec_in(struct jbg85_dec_state *s, unsigned char *data, size_t len,
     if (s->buffer[ 1] != 0) return JBG_EIMPL | 9; /* parameter outside T.85 */
     if (s->buffer[ 2] != 1) return JBG_EIMPL |10; /* parameter outside T.85 */
     if (s->buffer[17] != 0) return JBG_EIMPL |11; /* parameter outside T.85 */
-#if JBG85_STRICT_ORDER_BITS
+#ifdef JBG85_STRICT_ORDER_BITS
     if (s->buffer[18] != 0) return JBG_EIMPL |12; /* parameter outside T.85 */
 #endif
     if (s->options & 0x17)  return JBG_EIMPL |13; /* parameter outside T.85 */
@@ -999,7 +999,7 @@ int jbg85_dec_in(struct jbg85_dec_state *s, unsigned char *data, size_t len,
 	  if (s->buffer[2] == MARKER_ESC)
 	    continue; /* next time we'll have s->buf_len == 2 + 2 */
 	  else {
-	    /* push back the single peek-ahead PCSD byte */
+	    /* push back the single peek-ahead PSCD byte */
 	    assert(*cnt > 0);
 	    (*cnt)--;
 	    s->buf_len--;
@@ -1073,16 +1073,16 @@ int jbg85_dec_in(struct jbg85_dec_state *s, unsigned char *data, size_t len,
 
 /*
  * After the final BIE byte has been delivered to jbg85_dec_in(), it
- * may still return with JBG_EAGAIN in case the VLENGTH=1 option was
- * used and no NEWLEN marker section has appeared yet. This is because
+ * may still return with JBG_EAGAIN if the VLENGTH=1 option was
+ * used and no NEWLEN marker segment has appeared yet. This is because
  * such a BIE is not self-terminating (i.e., there could still be a
- * NEWLEN followed by an SDNORM or SDRST lurk after the final stripe,
+ * NEWLEN followed by an SDNORM or SDRST lurking after the final stripe,
  * which needs to be processed before the final line is output, see
  * ITU-T Recommendation T.85, Appendix I). Therefore, after the last
  * byte has been delivered, call this routine to signal the end of the
  * BIE. This is necessary to allow the routine to finish processing
  * BIEs with option VLENGTH=1 that do not actually contain any NEWLEN
- * marker section.
+ * marker segment.
  */
 int jbg85_dec_end(struct jbg85_dec_state *s)
 {

@@ -2,7 +2,7 @@
  *  Header file for the T.85 "light" version of the portable
  *  JBIG image compression library
  *
- *  Copyright 1995-2014 -- Markus Kuhn -- http://www.cl.cam.ac.uk/~mgk25/
+ *  Copyright 1995-2026 -- Markus Kuhn -- https://www.cl.cam.ac.uk/~mgk25/
  */
 
 #ifndef JBG85_H
@@ -15,14 +15,14 @@
  * JBIG-KIT version number
  */
 
-#define JBG85_VERSION    "2.1"
+#define JBG85_VERSION    "2.2"
 #define JBG85_VERSION_MAJOR 2
-#define JBG85_VERSION_MINOR 1
+#define JBG85_VERSION_MINOR 2
 
 /*
  * JBIG-KIT licence agreement reference code:
  * If you use JBIG-KIT under a commercial licence, please replace
- * below the letters GPL with the reference code that you received
+ * the letters GPL below with the reference code that you received
  * with your licence agreement. (This code is typically a letter "A"
  * followed by four decimal digits, e.g. "A1234".)
  */
@@ -30,7 +30,7 @@
 #define JBG85_LICENCE    "GPL"
 
 /*
- * Maximum number of ATMOVEs per stripe that decoder can handle
+ * Maximum number of ATMOVEs per stripe that the decoder can handle
  */
 
 #define JBG85_ATMOVES_MAX  1
@@ -121,14 +121,14 @@ struct jbg85_dec_state {
 					             * AT move will happen */
   int at_tx[JBG85_ATMOVES_MAX];      /* ATMOVE x-offsets in current stripe */
   unsigned long line_h1, line_h2, line_h3;     /* variables of decode_pscd */
-  int pseudo;         /* flag for TPBON/TPDON:  next pixel is pseudo pixel */
+  int pseudo;               /* flag for TPBON:  next pixel is pseudo pixel */
   int lntp;                            /* flag for TP: line is not typical */
   int (*line_out)(const struct jbg85_dec_state *s,
 		  unsigned char *start, size_t len,
 		  unsigned long y, void *file);
                                                     /* data write callback */
-  void *file;                            /* parameter passed to data_out() */
-  int intr;                      /* flag that line_out requested interrupt */
+  void *file;                            /* parameter passed to line_out() */
+  int intr;                    /* flag that line_out() requested interrupt */
   int end_of_bie;       /* flag that the end of the BIE has been signalled */
 };
 
@@ -167,7 +167,7 @@ const char *jbg85_strerror(int errnum);
 /* enquire about validity of image-size results */
 #define jbg85_dec_validwidth(s)  ((s)->bie_len == 20)
 #define jbg85_dec_finalheight(s) ((s)->bie_len == 20 &&			\
-				  ((((s)->options & JBG_VLENGHT) == 0) || \
+				  ((((s)->options & JBG_VLENGTH) == 0) || \
 				   ((s)->y >= (s)->y0)))
 
 #endif /* JBG85_H */

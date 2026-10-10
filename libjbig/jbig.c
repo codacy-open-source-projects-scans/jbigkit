@@ -1,7 +1,7 @@
 /*
  *  Portable JBIG image compression library
  *
- *  Copyright 1995-2014 -- Markus Kuhn -- http://www.cl.cam.ac.uk/~mgk25/
+ *  Copyright 1995-2026 -- Markus Kuhn -- https://www.cl.cam.ac.uk/~mgk25/
  *
  *  This module implements a portable standard C encoder and decoder
  *  using the JBIG1 lossless bi-level image compression algorithm
@@ -69,11 +69,11 @@
 /* object code version id */
 
 const char jbg_version[] =
-  "JBIG-KIT " JBG_VERSION " -- (c) 1995-2014 Markus Kuhn -- "
+  "JBIG-KIT " JBG_VERSION " -- (c) 1995-2026 Markus Kuhn -- "
   "Licence: " JBG_LICENCE "\n";
 
 /*
- * The following array specifies for each combination of the 3
+ * The following array specifies, for each combination of the 3
  * ordering bits, which ii[] variable represents which dimension
  * of s->sde.
  */
@@ -108,17 +108,17 @@ static const char *errmsg[] = {
 
 
 /*
- * The following three functions are the only places in this code, were
+ * The following three functions are the only places in this code where
  * C library memory management functions are called. The whole JBIG
  * library has been designed in order to allow multi-threaded
- * execution. No static or global variables are used, so all fuctions
- * are fully reentrant. However if you want to use this multi-thread
+ * execution. No static or global variables are used, so all functions
+ * are fully reentrant. However, if you want to use this multi-thread
  * capability and your malloc, realloc and free are not reentrant,
  * then simply add the necessary semaphores or mutex primitives below.
  * In contrast to C's malloc() and realloc(), but like C's calloc(),
  * these functions take two parameters nmemb and size that are multiplied
  * before being passed on to the corresponding C function.
- * This we can catch all overflows during a size_t multiplication a
+ * Thus we can catch all overflows during a size_t multiplication at
  * a single place.
  */
 
@@ -192,14 +192,14 @@ static void checked_free(void *ptr)
 
 
 /*
- * Memory management for buffers which are used for temporarily
- * storing SDEs by the encoder.
+ * Memory management for buffers used by the encoder for temporarily
+ * storing SDEs.
  *
  * The following functions manage a set of struct jbg_buf storage
- * containers were each can keep JBG_BUFSIZE bytes. The jbg_buf
+ * containers where each can keep JBG_BUFSIZE bytes. The jbg_buf
  * containers can be linked to form linear double-chained lists for
  * which a number of operations are provided. Blocks which are
- * tempoarily not used any more are returned to a freelist which each
+ * temporarily not used any more are returned to a freelist which each
  * encoder keeps. Only the destructor of the encoder actually returns
  * the block via checked_free() to the stdlib memory management.
  */
@@ -250,9 +250,9 @@ static void jbg_buf_free(struct jbg_buf **free_list)
 
 
 /*
- * Append a single byte to a single list that starts with the block
+ * Append a single byte to a linked list that starts with the block
  * *(struct jbg_buf *) head. The type of *head is void here in order to
- * keep the interface of the arithmetic encoder gereric, which uses this
+ * keep the interface of the arithmetic encoder generic, which uses this
  * function as a call-back function in order to deliver single bytes
  * for a PSCD.
  */
@@ -302,9 +302,9 @@ static void jbg_buf_remove_zeros(struct jbg_buf *head)
   }
 
   /*
-   * If the final non-zero byte is 0xff (MARKER_ESC), then we just have
+   * If the final non-zero byte is 0xff (MARKER_ESC), then we have just
    * removed a MARKER_STUFF and we will append it again now in order
-   * to preserve PSCD status of byte stream.
+   * to preserve the PSCD status of the byte stream.
    */
   if (head->last->len && head->last->d[head->last->len - 1] == MARKER_ESC)
     jbg_buf_write(MARKER_STUFF, head);
@@ -331,7 +331,7 @@ static void jbg_buf_prefix(struct jbg_buf *new_prefix, struct jbg_buf **start)
 
 /*
  * Send the contents of a jbg_buf list that starts with block **head to
- * the call back function data_out and return the blocks of the jbg_buf
+ * the call-back function data_out and return the blocks of the jbg_buf
  * list to the freelist from which these jbg_buf blocks have been taken.
  * After the call, *head == NULL.
  */
@@ -535,8 +535,8 @@ static char jbg_resred[4096] = {
 
 /*
  * Deterministic prediction tables given by ITU-T T.82 tables
- * 19 to 22. The table below is organized differently, the
- * index bits are permutated for higher efficiency.
+ * 19 to 22. The table below is organized differently: the
+ * index bits are permuted for higher efficiency.
  */
 
 static char jbg_dptable[256 + 512 + 2048 + 4096] = {
@@ -778,7 +778,7 @@ void jbg_enc_init(struct jbg_enc_state *s, unsigned long x, unsigned long y,
   assert(x > 0 && y > 0 && planes > 0 && planes < 256);
   s->xd = x;
   s->yd = y;
-  s->yd1 = y; /* This is the hight initially announced in BIH. To provoke
+  s->yd1 = y; /* This is the height initially announced in BIH. To provoke
                  generation of NEWLEN for T.85 compatibility tests,
                  overwrite with new value s->yd1 > s->yd  */
   s->planes = planes;
@@ -825,10 +825,10 @@ void jbg_enc_init(struct jbg_enc_state *s, unsigned long x, unsigned long y,
  * the maximum size requested for the lowest resolution layer. If
  * possible, a number of differential layers is selected, which will
  * keep the size of the lowest resolution layer below or equal to the
- * given width x and height y. However not more than 6 differential
+ * given width x and height y. However, not more than 6 differential
  * resolution layers will be used. In addition, a reasonable value for
  * l0 (height of one stripe in the lowest resolution layer) is
- * selected, which obeys the recommended limitations for l0 in annex A
+ * selected, which obeys the recommended limitations for l0 in Annexes A
  * and C of the JBIG standard. The selected number of resolution layers
  * is returned.
  */
@@ -846,9 +846,9 @@ int jbg_enc_lrlmax(struct jbg_enc_state *s, unsigned long x,
 
 
 /*
- * As an alternative to jbg_enc_lrlmax(), the following function allows
- * to specify the number of layers directly. The stripe height and layer
- * range is also adjusted automatically here.
+ * As an alternative to jbg_enc_lrlmax(), the following function lets
+ * you specify the number of layers directly. The stripe height and layer
+ * range are also adjusted automatically here.
  */
 void jbg_enc_layers(struct jbg_enc_state *s, int d)
 {
@@ -864,7 +864,7 @@ void jbg_enc_layers(struct jbg_enc_state *s, int d)
 
 /*
  * Specify the highest and lowest resolution layers which will be
- * written to the output file. Call this function not before
+ * written to the output file. Do not call this function before
  * jbg_enc_layers() or jbg_enc_lrlmax(), because these two functions
  * reset the lowest and highest resolution layer to default values.
  * Negative values are ignored. The total number of layers is returned.
@@ -879,9 +879,9 @@ int jbg_enc_lrange(struct jbg_enc_state *s, int dl, int dh)
 
 
 /*
- * The following function allows to specify the bits describing the
+ * The following function lets you specify the bits describing the
  * options of the format as well as the maximum AT movement window and
- * the number of layer 0 lines per stripes.
+ * the number of layer 0 lines per stripe.
  */
 void jbg_enc_options(struct jbg_enc_state *s, int order, int options,
 		     unsigned long l0, int mx, int my)
@@ -898,7 +898,7 @@ void jbg_enc_options(struct jbg_enc_state *s, int order, int options,
 
 /*
  * This function actually does all the tricky work involved in producing
- * a SDE, which is stored in the appropriate s->sde[][][] element
+ * an SDE, which is stored in the appropriate s->sde[][][] element
  * for later output in the correct order.
  */
 static void encode_sde(struct jbg_enc_state *s,
@@ -1001,7 +1001,7 @@ static void encode_sde(struct jbg_enc_state *s,
 
     for (i = 0; i < hl && y < hy; i++, y++) {
 
-      /* check whether it is worth to perform an ATMOVE */
+      /* check whether it is worth performing an ATMOVE */
       if (!at_determined && c_all > 2048) {
 	cmin = clmin = 0xffffffffL;
 	cmax = clmax = 0;
@@ -1180,7 +1180,7 @@ static void encode_sde(struct jbg_enc_state *s,
 
     for (i = 0; i < hl && y < hy; i++, y++) {
 
-      /* check whether it is worth to perform an ATMOVE */
+      /* check whether it is worth performing an ATMOVE */
       if (!at_determined && c_all > 2048) {
 	cmin = clmin = 0xffffffffL;
 	cmax = clmax = 0;
@@ -1339,7 +1339,7 @@ static void encode_sde(struct jbg_enc_state *s,
 	  do { /* ... while (j & 7 && j < hx) */
 	    line_l1 <<= 1;  line_l2 <<= 1;  line_l3 <<= 1;
 	    if (ltp && s->tp[j >> 1] < 2) {
-	      /* pixel are typical and have not to be encoded */
+	      /* pixels are typical and do not have to be encoded */
 	      line_h1 <<= 2;  line_h2 <<= 2;  line_h3 <<= 2;
 #ifdef DEBUG
 	      do {
@@ -1623,11 +1623,11 @@ static void resolution_reduction(struct jbg_enc_state *s, int plane,
 
 /*
  * This function is called inside the three loops of jbg_enc_out() in
- * order to write the next SDE. It has first to generate the required
+ * order to write the next SDE. It first has to generate the required
  * SDE and all SDEs which have to be encoded before this SDE can be
  * created. The problem here is that if we want to output a lower
  * resolution layer, we have to apply the resolution reduction
- * algorithm first to get it. As we try to safe as much memory as
+ * algorithm first to get it. As we try to save as much memory as
  * possible, the resolution reduction will overwrite previous higher
  * resolution bitmaps. Consequently, we have to encode and buffer SDEs
  * which depend on higher resolution layers before we can start the
@@ -1657,7 +1657,7 @@ static void output_sde(struct jbg_enc_state *s,
 
   /* Determine the smallest resolution layer in this plane for which
    * not yet all stripes have been encoded into SDEs. This layer will
-   * have to be completely coded, before we can apply the next
+   * have to be completely coded before we can apply the next
    * resolution reduction step. */
   lfcl = 0;
   for (i = s->d; i >= 0; i--)
@@ -1710,7 +1710,7 @@ static void output_sde(struct jbg_enc_state *s,
  *             7  8  9               2  3
  *            10 11 12
  *
- * were 4 table entries are packed into one byte, while we here use
+ * where 4 table entries are packed into one byte, while we here use
  * internally an unpacked 6912 byte long table indexed by the following
  * bit order:
  *
@@ -1943,9 +1943,9 @@ void jbg_enc_out(struct jbg_enc_state *s)
 
 	/*
 	 * When we generate a NEWLEN test case (s->yd1 > s->yd), output
-	 * NEWLEN after last stripe if we have only a single
+	 * NEWLEN after the last stripe if we have only a single
 	 * resolution layer or plane (see ITU-T T.85 profile), otherwise
-	 * output NEWLEN before last stripe.
+	 * output NEWLEN before the last stripe.
 	 */
 	if (s->yd1 > s->yd &&
 	    (stripe == s->stripes - 1 ||
@@ -2061,7 +2061,7 @@ void jbg_dec_init(struct jbg_dec_state *s)
 /*
  * Specify a maximum image size for the decoder. If the JBIG file has
  * the order bit ILEAVE, but not the bit SEQ set, then the decoder
- * will abort to decode after the image has reached the maximal
+ * will stop decoding after the image has reached the maximal
  * resolution layer which is still not wider than xmax or higher than
  * ymax.
  */
@@ -2076,7 +2076,7 @@ void jbg_dec_maxsize(struct jbg_dec_state *s, unsigned long xmax,
 
 
 /*
- * Decode the new len PSDC bytes to which data points and add them to
+ * Decode the new len PSCD bytes to which data points and add them to
  * the current stripe. Return the number of bytes which have actually
  * been read (this will be less than len if a marker segment was
  * part of the data or if the final byte was 0xff, in which case
@@ -2224,16 +2224,16 @@ static size_t decode_pscd(struct jbg_dec_state *s, unsigned char *data,
        *
        * Assume we are in layer 0 and all stripes are single lines
        * (L0=1 allowed by table 9). We are now decoding the first (and
-       * only) line of the third stripe. Assume, the first stripe was
+       * only) line of the third stripe. Assume the first stripe was
        * terminated by SDRST and the second stripe was terminated by
        * SDNORM. While decoding the only line of the third stripe with
        * the three-line template, we need access to pixels from the
        * previous two stripes. We know that the previous stripe
-       * terminated with SDNROM, so we access the pixel from the
+       * terminated with SDNORM, so we access the pixels from the
        * second stripe. But do we have to replace the pixels from the
        * first stripe by background pixels, because this stripe ended
-       * with SDRST? The standard, especially clause 6.2.5 does never
-       * mention this case, so the behaviour is undefined here. My
+       * with SDRST? The standard, especially clause 6.2.5, never
+       * mentions this case, so the behaviour is undefined here. My
        * current implementation remembers only the marker used to
        * terminate the previous stripe. In the above example, the
        * pixels of the first stripe are accessed despite the fact that
@@ -2244,12 +2244,12 @@ static size_t decode_pscd(struct jbg_dec_state *s, unsigned char *data,
        * previous lines. What am I supposed to do here?
        *
        * As the standard is unclear about the correct behaviour in the
-       * situation of the above example, I strongly suggest to avoid
+       * situation of the above example, I strongly suggest avoiding
        * the following situation while encoding data with JBIG:
        *
        *   LRLTWO = 0, L0=1 and both SDNORM and SDRST appear in layer 0.
        *
-       * I guess that only a very few if any encoders will switch
+       * I guess that only very few encoders, if any, will switch
        * between SDNORM and SDRST, so let us hope that this ambiguity
        * in the standard will never cause any interoperability
        * problems.
@@ -2426,7 +2426,7 @@ static size_t decode_pscd(struct jbg_dec_state *s, unsigned char *data,
                     ((line_l1 >> 8)  & 0x1c0));
 	    if (!s->lntp[plane][layer - s->dl] &&
 		(cx == 0x000 || cx == 0x1ff)) {
-	      /* pixels are typical and have not to be decoded */
+	      /* pixels are typical and do not have to be decoded */
 	      do {
 		line_h1 = (line_h1 << 1) | (cx & 1);
 	      } while ((++x & 1) && x < hx);
@@ -2543,12 +2543,12 @@ static size_t decode_pscd(struct jbg_dec_state *s, unsigned char *data,
  *                   (*cnt == len) but the end of the data stream has
  *                   not yet been recognized. Call the function again
  *                   with additional BIE bytes.
- *   JBG_EOK         The function has reached the end of a and
+ *   JBG_EOK         The function has reached the end of a BIE and
  *                   a full image has been decoded. The function can
  *                   be called again with data from the next BIE, if
  *                   there exists one, in order to get to a higher
  *                   resolution layer. The remaining len - *cnt bytes
- *                   of the previous data block will then have to passed
+ *                   of the previous data block will then have to be passed
  *                   to this function again if len > *cnt.
  *   JBG_EOK_INTR    Parsing the BIE has been interrupted as had been
  *                   requested by a jbg_dec_maxsize() specification.
@@ -2561,7 +2561,7 @@ static size_t decode_pscd(struct jbg_dec_state *s, unsigned char *data,
  * Any other return value indicates that the decoding process was
  * aborted by a serious problem and the only function you can then
  * still call is jbg_dec_free() in order to remove the mess, and
- * jbg85_strerror() to find out what to tell the user. (Looking at the
+ * jbg_strerror() to find out what to tell the user. (Looking at the
  * least significant bits of the return value will provide additional
  * information by identifying which test exactly has failed.)
  */
@@ -2848,7 +2848,7 @@ int jbg_dec_in(struct jbg_dec_state *s, unsigned char *data, size_t len,
 
 	s->buf_len = 0;
 
-	/* check whether this have been all SDEs */
+	/* check whether all SDEs have been processed */
 	if (j) {
 #ifdef DEBUG
 	  fprintf(stderr, "This was the final SDE in this BIE, "
@@ -2963,7 +2963,7 @@ unsigned char *jbg_dec_getimage(const struct jbg_dec_state *s, int plane)
 /*
  * After jbg_dec_in() returned JBG_EOK or JBG_EOK_INTR, you can call
  * this function in order to find out the size in bytes of one
- * bitplane of the image.
+ * bit plane of the image.
  */
 unsigned long jbg_dec_getsize(const struct jbg_dec_state *s)
 {
@@ -3044,10 +3044,10 @@ void jbg_dec_free(struct jbg_dec_state *s)
 
 
 /*
- * Split bigendian integer pixel field into separate bit planes. In the
+ * Split big-endian integer pixel field into separate bit planes. In the
  * src array, every pixel is represented by a ((has_planes + 7) / 8) byte
  * long word, most significant byte first. While has_planes describes
- * the number of used bits per pixel in the source image, encode_plane
+ * the number of used bits per pixel in the source image, encode_planes
  * is the number of most significant bits among those that we
  * actually transfer to dest.
  */
@@ -3073,13 +3073,13 @@ void jbg_split_planes(unsigned long x, unsigned long y, int has_planes,
     memset(dest[p], 0, bpl * y);
 
   for (line = 0; line < y; line++) {                 /* lines loop */
-    for (i = 0; i * 8 < x; i++) {                    /* dest bytes loop */
+    for (i = 0; i * 8 < x; i++) {                    /* dest-byte loop */
       for (k = 0; k < 8 && i * 8 + k < x; k++) {     /* pixel loop */
 	prev = 0;
-	for (p = 0; p < encode_planes; p++) {        /* bit planes loop */
+	for (p = 0; p < encode_planes; p++) {        /* bit-plane loop */
 	  /* calculate which bit in *src do we want */
 	  bitno = (msb - p) & 7;
-	  /* put this bit with its left neighbor right adjusted into bits */
+	  /* put this bit with its left neighbour right adjusted into bits */
 	  bits = (prev | *src) >> bitno;
 	  /* go to next *src byte, but keep old */
 	  if (bitno == 0)
@@ -3247,7 +3247,7 @@ unsigned char *jbg_next_pscdms(unsigned char *p, size_t len)
  * depends on the fact that section 6.2.6.2 of ITU-T T.82 says that a
  * NEWLEN marker segment "could refer to a line in the immediately
  * preceding stripe due to an unexpected termination of the image or
- * the use of only such stripe". ITU-T.85 explicitely suggests the
+ * the use of only such stripe". ITU-T T.85 explicitly suggests the
  * use of this for fax machines that start transmission before having
  * encountered the end of the page. None of this is necessary for
  * BIEs produced by JBIG-KIT, which normally does not use NEWLEN.
@@ -3269,7 +3269,9 @@ int jbg_newlen(unsigned char *bie, size_t len)
   while ((p = jbg_next_pscdms(p, len - (p - bie)))) {
     if (p == bie + len)
       return JBG_EOK;
-    else if (p[0] == MARKER_ESC)
+    if (p + 1 >= bie + len)
+      return JBG_EAGAIN;
+    if (p[0] == MARKER_ESC)
       switch (p[1]) {
       case MARKER_NEWLEN:
         if (p + 5 >= bie + len)

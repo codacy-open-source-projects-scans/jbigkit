@@ -1,7 +1,7 @@
 /*
  *  jbgtopbm85 - JBIG to Portable Bitmap converter (T.85 version)
  *
- *  Markus Kuhn - http://www.cl.cam.ac.uk/~mgk25/jbigkit/
+ *  Markus Kuhn -- https://www.cl.cam.ac.uk/~mgk25/jbigkit/
  */
 
 #include <stdio.h>
@@ -23,7 +23,8 @@ static void usage(void)
 {
   fprintf(stderr, "JBIGtoPBM converter " JBG85_VERSION " (T.85 version) --\n"
 	  "reads a bi-level image entity (BIE) as input file\n\n"
-	  "usage: %s [<input-file> | -  [<output-file>]]\n\n", progname);
+	  "usage: %s [<options>] [<input-file> | -  [<output-file>]]\n\n",
+	  progname);
   fprintf(stderr, "options:\n\n"
 	  "  -x number\tmaximum number of pixels per line for which memory\n"
 	  "\t\tis allocated (default: 8192)\n"
@@ -34,7 +35,7 @@ static void usage(void)
 
 
 /*
- * Call-back routine for merged image output
+ * Call-back routine for decoded line output
  */
 int line_out(const struct jbg85_dec_state *s,
 	     unsigned char *start, size_t len, unsigned long y, void *file)
@@ -109,7 +110,7 @@ int main (int argc, char **argv)
   outbuflen = ((xmax >> 3) + !!(xmax & 7)) * 3;
   outbuf = (unsigned char *) malloc(outbuflen);
   if (!inbuf || !outbuf) {
-    printf("Sorry, not enough memory available!\n");
+    fprintf(stderr, "Sorry, not enough memory available!\n");
     exit(1);
   }
 
@@ -125,7 +126,7 @@ int main (int argc, char **argv)
   if (fnout) {
     fout = fopen(fnout, "wb");
     if (!fout) {
-      fprintf(stderr, "Can't open input file '%s", fnout);
+      fprintf(stderr, "Can't open output file '%s", fnout);
       perror("'");
       exit(1);
     }
@@ -140,8 +141,8 @@ int main (int argc, char **argv)
     bytes_read += cnt;
     while (result == JBG_EOK_INTR) {
       /* demonstrate decoder interrupt at given line number */
-      printf("Decoding interrupted after %lu lines and %lu BIE bytes "
-	     "... continuing ...\n", s.y, (unsigned long) bytes_read);
+      fprintf(stderr, "Decoding interrupted after %lu lines and %lu BIE "
+	      "bytes ... continuing ...\n", s.y, (unsigned long) bytes_read);
       /* and now continue decoding */
       result = jbg85_dec_in(&s, inbuf + cnt, len - cnt, &cnt2);
       bytes_read += cnt2;
@@ -160,12 +161,12 @@ int main (int argc, char **argv)
     exit(1);
   }
   if (result == JBG_EAGAIN || result == JBG_EOK_INTR) {
-    /* signal end-of-BIE explicitely */
+    /* signal end-of-BIE explicitly */
     result = jbg85_dec_end(&s);
     while (result == JBG_EOK_INTR) {
       /* demonstrate decoder interrupt at given line number */
-      printf("Decoding interrupted after %lu lines and %lu BIE bytes "
-	     "... continuing ...\n", s.y, (unsigned long) bytes_read);
+      fprintf(stderr, "Decoding interrupted after %lu lines and %lu BIE "
+	      "bytes ... continuing ...\n", s.y, (unsigned long) bytes_read);
       result = jbg85_dec_end(&s);
     }
   }

@@ -1,7 +1,7 @@
 /*
  *  pbmtojbg85 - Portable Bitmap to JBIG converter (T.85 version)
  *
- *  Markus Kuhn - http://www.cl.cam.ac.uk/~mgk25/jbigkit/
+ *  Markus Kuhn -- https://www.cl.cam.ac.uk/~mgk25/jbigkit/
  */
 
 #include <stdio.h>
@@ -34,9 +34,9 @@ static void usage(void)
   fprintf(stderr,
      "  -C string\tadd the provided string as a comment marker segment\n");
   fprintf(stderr,
-     "  -Y yi yr\tannounce in header initially the larger image height yi\n"
-     "\t\tand then announce after line yr has been encoded the real height\n"
-     "\t\tusing NEWLEN marker (for testing NEWLEN and VLENGTH=1 function)\n\n");
+     "  -Y yi yr\tannounce in header initially the larger image height yi,\n"
+     "\t\tthen announce the real height after line yr has been encoded,\n"
+     "\t\tusing a NEWLEN marker (to test NEWLEN and VLENGTH=1)\n\n");
   exit(1);
 }
 
@@ -58,32 +58,46 @@ void *checkedmalloc(size_t n)
 
 
 /*
- * Read an ASCII integer number from file f and skip any PBM
- * comments which are encountered.
+ * Report a problem with the input file and abort
  */
-static unsigned long getint(FILE *f)
+static void input_error(FILE *f, const char *fn)
+{
+  if (ferror(f)) {
+    fprintf(stderr, "Problem while reading input file '%s", fn);
+    perror("'");
+  } else
+    fprintf(stderr, "Unexpected end of input file '%s'!\n", fn);
+  exit(1);
+}
+
+
+/*
+ * Read an ASCII integer number from file f into *value and skip any
+ * PBM comments which are encountered. Returns 0 if a number was read
+ * and EOF if the end of the file (or a read error) came first.
+ */
+static int getint(FILE *f, unsigned long *value)
 {
   int c;
-  unsigned long i;
 
   while ((c = getc(f)) != EOF)
     if (c == '#')
       while ((c = getc(f)) != EOF && !(c == 13 || c == 10)) ;
     else if (!isspace(c))
       break;
-  if (c == EOF) return 0;
+  if (c == EOF) return EOF;
   ungetc(c, f);
-  if (fscanf(f, "%lu", &i) != 1) {
+  if (fscanf(f, "%lu", value) != 1) {
     fprintf(stderr, "Unsigned integer value expected!\n");
     exit(1);
   }
 
-  return i;
+  return 0;
 }
 
 
 /*
- * Callback procedure which is used by JBIG encoder to deliver the
+ * Call-back procedure which is used by the JBIG encoder to deliver the
  * encoded data. It simply sends the bytes to the output file.
  */
 static void data_out(unsigned char *start, size_t len, void *file)
@@ -98,13 +112,14 @@ int main (int argc, char **argv)
   FILE *fin = stdin, *fout = stdout;
   const char *fnin = NULL, *fnout = NULL;
   int i, j, c;
-  int all_args = 0, files = 0;
-  unsigned long x, y;
+  int all_args = 0, files = 0, ferr = 0;
+  unsigned long x, y, v;
   unsigned long width, height;
   size_t bpl;
   char type;
   unsigned char *p, *lines, *next_line;
   unsigned char *prev_line = NULL, *prevprev_line = NULL;
+  unsigned char b = 0;   /* assembles 8 pixels of PBM text format */
   struct jbg85_enc_state s;
   int mx = -1;
   unsigned long l0 = 0, yi = 0, yr = 0;
@@ -122,9 +137,6 @@ int main (int argc, char **argv)
 	  switch(argv[i][j]) {
 	  case '-' :
 	    all_args = 1;
-	    break;
-	  case 0 :
-	    if (files++) usage();
 	    break;
 	  case 'Y':
 	    if (i+2 >= argc) usage();
@@ -184,8 +196,8 @@ int main (int argc, char **argv)
     fprintf(stderr, "Input file '%s' does not look like a PBM file!\n", fnin);
     exit(1);
   }
-  width = getint(fin);
-  height = getint(fin);
+  if (getint(fin, &width) || getint(fin, &height))
+    input_error(fin, fnin);
   fgetc(fin);    /* skip line feed */
 
   /* Test for valid parameters */
@@ -203,14 +215,14 @@ int main (int argc, char **argv)
   if (fnout) {
     fout = fopen(fnout, "wb");
     if (!fout) {
-      fprintf(stderr, "Can't open input file '%s", fnout);
+      fprintf(stderr, "Can't open output file '%s", fnout);
       perror("'");
       exit(1);
     }
   } else
     fnout = "<stdout>";
 
-  /* initialize parameter struct for JBIG encoder*/
+  /* initialize parameter struct for JBIG encoder */
   jbg85_enc_init(&s, width, yi ? yi : height, data_out, fout);
 
   /* Specify a few other options (each is ignored if negative) */
@@ -234,32 +246,27 @@ int main (int argc, char **argv)
       /* PBM text format */
       p = next_line;
       for (x = 0; x <= ((width-1) | 7); x++) {
-	*p <<= 1;
-	if (x < width)
-	  *p |= getint(fin) & 1;
+	if (x < width) {
+	  if (getint(fin, &v)) { ferr = 1; break; }
+	  b = (b << 1) | (v & 1);
+	} else
+	  b <<= 1;                    /* zero padding at the end of the line */
 	if ((x & 7) == 7)
-	  ++p;
+	  *p++ = b;
       }
       break;
     case '4':
       /* PBM raw binary format */
-      fread(next_line, bpl, 1, fin);
+      ferr = fread(next_line, bpl, 1, fin) != 1;
       break;
     default:
       fprintf(stderr, "Unsupported PBM type P%c!\n", type);
       exit(1);
     }
-    if (ferror(fin)) {
-      fprintf(stderr, "Problem while reading input file '%s", fnin);
-      perror("'");
-      exit(1);
-    }
-    if (feof(fin)) {
-      fprintf(stderr, "Unexpected end of input file '%s'!\n", fnin);
-      exit(1);
-    }
+    if (ferr)
+      input_error(fin, fnin);
 
-    /* JBIG compress another line and write out result via callback */
+    /* JBIG compress another line and write out result via call-back */
     jbg85_enc_lineout(&s, next_line, prev_line, prevprev_line);
     prevprev_line = prev_line;
     prev_line = next_line;

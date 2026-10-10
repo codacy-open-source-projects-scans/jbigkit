@@ -2,7 +2,16 @@
 JBIG-KIT revision history
 -------------------------
 
-Changes in upcoming version (TBA)
+Changes in version 2.2 (2026-10-09)
+
+This release fixes a number of robustness problems in both the library
+and the command-line converters. Users who process BIE or PBM/PGM data
+from untrusted sources should upgrade.
+
+  - pbmtojbg and pbmtojbg85 now bound the width, height and maxval
+    read from a PBM/PGM header, and check the size calculations that
+    follow for integer overflow. Previously a crafted header could
+    make them allocate a truncated buffer and then write past its end.
 
   - The jbig.c decoder will now, by default, return JBG_ENOMEM if the
     final image layer would occupy more than two gigabytes. Users can
@@ -10,7 +19,43 @@ Changes in upcoming version (TBA)
     jbg_dec_init(&sd). This is to reduce the risk of denial-of-service
     attacks through excessive image dimensions (e.g., CVE-2017-9937).
 
-  - minor bug fixes and documentation clarifications
+  - jbg_newlen() now checks for the end of the data before reading a
+    marker code and within a NEWLEN marker segment
+
+  - fixed a typo in the jbg85_dec_finalheight() macro, which tested a
+    misspelled JBG_VLENGHT instead of JBG_VLENGTH
+
+  - jbg_enc_options() now tests the mx argument rather than my against
+    the permitted range
+
+  - jbgtopbm no longer divides by zero when option -d is applied to a
+    BIE with an invalid BIH
+
+  - pbmtojbg and jbgtopbm now open the output file only after the input
+    file has been read completely, so that converting a file onto
+    itself no longer destroys it
+
+  - jbgtopbm85 now writes its progress messages to stderr, so that
+    option -y no longer corrupts a PBM image written to standard output
+
+  - pbmtojbg now aborts with an error message if the chosen combination
+    of layer and stripe options encoded nothing, rather than silently
+    leaving an empty output file behind
+
+  - pbmtojbg and pbmtojbg85 now accept an ASCII PBM/PGM file whose
+    final value is not followed by white space
+
+  - "jbgtopbm -d" now also calculates the uncompressed image size
+
+  - the Makefile uses $(MAKE) and $(LDFLAGS) in more places
+
+  - the contrib directory, which held Atari ST project files
+    contributed in 1996, has been removed
+
+  - Polish translation PO file contributed by Jakub Bogusz
+
+  - numerous corrections to comments and documentation
+
 
 Changes in version 2.1 (2014-04-08)
 
@@ -30,6 +75,10 @@ untrusted sources should upgrade.
   - fixed integer-type mismatches in printf arguments on 64-bit systems
 
   - fuzz-testing script added
+
+  - numeric version macros JBG_VERSION_MAJOR and JBG_VERSION_MINOR
+    added to jbig.h (and JBG85_* equivalents to jbig85.h), for use in
+    #if tests by applications supporting several JBIG-KIT versions
 
 
 Changes in version 2.0 (2008-08-30)
@@ -127,7 +176,7 @@ Changes in version 1.6 (2004-06-11)
 Changes in version 1.5 (2003-06-11)
 
   - fixed two minor memory leaks (special thanks to Davide Pizzolato
-    <ing.davide.pizzolato@libero.it> for locating one of these)
+    for locating one of these)
 
   - jbgtopbm does not attempt any more to parse multiple concatenated
     BIEs (options -m must be used now to enable this feature explicitly),
@@ -159,8 +208,8 @@ Changes in version 1.5 (2003-06-11)
 Changes in version 1.4 (2002-04-09)
 
   - typo fixed in stripe number calculation, which caused encoder and
-    decoder to fail on certain image sizes (special thanks to Koen Denecker
-    <denecker@elis.rug.ac.be> for locating this one)
+    decoder to fail on certain image sizes (special thanks to Koen
+    Denecker for locating this one)
 
 
 Changes in version 1.3 (2002-03-23):
@@ -176,8 +225,7 @@ Changes in version 1.2 (2000-04-08):
 
   - bug in the decoder fixed, which caused the rest of the input file
     to be skipped whenever a comment marker was encountered (special
-    thanks to Ben Rudiak-Gould <benrg@math.berkeley.edu> for
-    reporting this one)
+    thanks to Ben Rudiak-Gould for reporting this one)
 
 
 Changes in version 1.1 (1999-11-16):
@@ -186,8 +234,7 @@ Changes in version 1.1 (1999-11-16):
     percentage of images has caused an unterminated linked list to be
     created internally that could have been responsible for
     segmentation violations or non-terminating encoders
-    (special thanks to Hisashi Saiga <saiga@itl.tnr.sharp.co.jp> for
-    tracking that one down)
+    (special thanks to Hisashi Saiga for tracking that one down)
 
   - minor bug in the "jbgtopbm -d" diagnostic output fixed
 
@@ -216,7 +263,6 @@ Changes in version 0.9 (1996-01-09):
     padding
 
   - various minor improvements suggested by Stefan Willer
-    <Stefan.Willer@unnet.wupper.DE>
 
   - many minor changes in order to avoid warnings from paranoid
     compilers
@@ -240,7 +286,7 @@ Changes in version 0.8 (1995-09-20):
 Changes in version 0.7 (1995-06-10):
 
   - more problems on 16-bit int systems and on Macintosh systems fixed
-    (special thanks to Jean-Pierre Gachen <jpg11@calvanet.calvacom.fr>)
+    (special thanks to Jean-Pierre Gachen)
 
   - global Makefile
 

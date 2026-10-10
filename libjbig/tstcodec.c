@@ -3,7 +3,7 @@
  *
  *  Run this test sequence after each modification on the JBIG library.
  *
- *  Markus Kuhn -- http://www.cl.cam.ac.uk/~mgk25/
+ *  Markus Kuhn -- https://www.cl.cam.ac.uk/~mgk25/
  */
 
 #include <stdio.h>
@@ -331,9 +331,9 @@ int main(int argc, char **argv)
   pp += 0x4000;
   if (testbuf[0] != 42 || *pp != 0x43) {
     printf("Porting error detected:\n\n"
-	   "Pointer arithmetic with this compiler has not at least 32 bits!\n"
-	   "Are you sure, you have not compiled this program on an 8-bit\n"
-	   "or 16-bit architecture? This compiler mode can obviously not\n"
+	   "Pointer arithmetic with this compiler does not have at least 32 bits!\n"
+	   "Are you sure you have not compiled this program on an 8-bit\n"
+	   "or 16-bit architecture? This compiler mode obviously cannot\n"
            "handle arrays with a size of more than 65536 bytes. With this\n"
            "memory model, JBIG-KIT can only handle very small images and\n"
            "not even this compatibility test suite will run. :-(\n\n");
@@ -542,7 +542,7 @@ int main(int argc, char **argv)
     puts("This is bad. If you cannot identify the problem yourself, please "
 	 "send\nthis output plus a detailed description of your "
 	 "compile environment\n(OS, compiler, version, options, etc.) to "
-	 "Markus Kuhn\n<http://www.cl.cam.ac.uk/~mgk25/>.");
+	 "Markus Kuhn\n<https://www.cl.cam.ac.uk/~mgk25/>.");
   else
     puts("Congratulations, everything is fine.\n");
 
